@@ -10,7 +10,7 @@ on:
 
 env:
   GIT_TAG: ${{ github.event.release.tag_name }}
-  GIT_BRANCH: $([ -n "${GIT_TAG}" ] && echo "master" || echo "${GITHUB_REF#refs/*/}")
+  GIT_BRANCH: ${GITHUB_REF#refs/*/}
   OUTPUT_DIR: ${GIT_TAG:-${GIT_BRANCH}}
 
 jobs:
