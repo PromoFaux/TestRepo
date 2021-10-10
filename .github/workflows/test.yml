@@ -40,12 +40,16 @@ jobs:
   job3:
     runs-on: ubuntu-latest
     needs: define-shared-vars
+    env:
+     BUM: ${{needs.define-shared-vars.outputs.GIT_TAG}}
+     BUM2: ${{needs.define-shared-vars.outputs.GIT_BRANCH}}
+     BUM3: ${{needs.define-shared-vars.outputs.OUTPUT_DIR}}
     steps:
      - 
        name: Test?
        run: |
-          echo ${{define-shared-vars.outputs.GIT_TAG}}
-          echo ${{define-shared-vars.outputs.GIT_BRANCH}}
-          echo ${{define-shared-vars.outputs.OUTPUT_DIR}}
+          echo ${BUM} 
+          echo ${BUM2}
+          echo ${BUM3}
        
     
