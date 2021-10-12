@@ -7,7 +7,7 @@ on:
   pull_request:
   release:
     types: [published]
-  
+
 jobs:
   define-shared-vars:
     runs-on: ubuntu-latest
@@ -23,33 +23,68 @@ jobs:
           GIT_TAG=${{ github.event.release.tag_name }}
           # If GIT_TAG is set then GIT BRANCH should be "master", else set it from GITHUB_REF
           GIT_BRANCH=$([ -n "${GIT_TAG}" ] && echo "master" || echo "${GITHUB_REF#refs/*/}")
-
           echo ::set-output name=GIT_BRANCH::${GIT_BRANCH}
           echo ::set-output name=GIT_TAG::${GIT_TAG}
           echo ::set-output name=OUTPUT_DIR::${GIT_TAG:-${GIT_BRANCH}}
-  job2:
-    runs-on: ubuntu-latest
-    needs: define-shared-vars
-    steps:
-     - 
-       name: Test?
-       run: |
-        echo ${{needs.define-shared-vars.outputs.GIT_TAG}}
-        echo ${{needs.define-shared-vars.outputs.GIT_BRANCH}}
-        echo ${{needs.define-shared-vars.outputs.OUTPUT_DIR}}
-  job3:
-    runs-on: ubuntu-latest
+
+  build-and-test-x86-32-64:
     needs: define-shared-vars
     env:
-     BUM: ${{needs.define-shared-vars.outputs.GIT_TAG}}
-     BUM2: ${{needs.define-shared-vars.outputs.GIT_BRANCH}}
-     BUM3: ${{needs.define-shared-vars.outputs.OUTPUT_DIR}}
+      GIT_TAG: ${{ needs.define-shared-vars.outputs.GIT_TAG }}
+      GIT_BRANCH: ${{ needs.define-shared-vars.outputs.GIT_BRANCH }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            bin_name: pihole-FTL-linux-x86_64
+          - arch: x86_64-musl
+            bin_name: pihole-FTL-musl-linux-x86_64
+          - arch: x86_32
+            bin_name: pihole-FTL-linux-x86_32
+    container: ghcr.io/pi-hole/ftl-build:v1.14-${{ matrix.arch }}
     steps:
-     - 
-       name: Test?
-       run: |
-          echo ${BUM} 
-          echo ${BUM2}
-          echo ${BUM3}
-       
-    
+      -
+        name: Checkout code
+        uses: actions/checkout@v2
+      -
+        name: Test the variables
+        run: |
+          echo "Matrix.arch is ${{ matrix.arch }}"
+          echo "GIT_TAG is ${GIT_TAG}"
+          echo "GIT_BRANCH is ${GIT_BRANCH}"
+
+  build-arm-aarch64:
+    needs: [ build-and-test-x86-32-64, define-shared-vars]
+    env:
+      GIT_TAG: ${{ needs.define-shared-vars.outputs.GIT_TAG }}
+      GIT_BRANCH: ${{ needs.define-shared-vars.outputs.GIT_BRANCH }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+         - arch: armv4t
+           bin_name: pihole-FTL-armv4-linux-gnueabi
+         - arch: armv5te
+           bin_name: pihole-FTL-armv5-linux-gnueabi
+         - arch: armv6hf
+           bin_name:  pihole-FTL-armv6-linux-gnueabihf
+         - arch: armv7hf
+           bin_name: pihole-FTL-armv7-linux-gnueabihf
+         - arch: armv8a
+           bin_name: pihole-FTL-armv8-linux-gnueabihf
+         - arch: aarch64
+           bin_name: pihole-FTL-aarch64-linux-gnu
+    container: ghcr.io/pi-hole/ftl-build:v1.14-${{ matrix.arch }}
+    continue-on-error: true
+    steps:
+      -
+        name: Checkout code
+        uses: actions/checkout@v2
+      -
+        name: Test the variables
+        run: |
+          echo "Matrix.arch is ${{ matrix.arch }}"
+          echo "GIT_TAG is ${GIT_TAG}"
+          echo "GIT_BRANCH is ${GIT_BRANCH}"
