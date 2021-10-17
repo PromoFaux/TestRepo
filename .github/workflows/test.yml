@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest   
     steps:
       - run: |
-            if [ "${{ sercrets.NUGET_API_KEY }}" == "" ]; then
+            if [ "${{ secrets.NUGET_API_KEY }}" == "" ]; then
              echo "IT'S blank"
             fi
         
